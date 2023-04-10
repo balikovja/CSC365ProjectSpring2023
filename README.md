@@ -1,6 +1,6 @@
 Contributors:  
 Jacob Balikov - jbalikov@calpoly.edu  
-Jake - joalt@calpoly.edu
+Jake Alt - joalt@calpoly.edu
 
 Description: asdf
 
