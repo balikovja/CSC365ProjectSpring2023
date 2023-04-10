@@ -2,9 +2,5 @@ Contributors:
 Jacob Balikov - jbalikov@calpoly.edu  
 Jake Alt - joalt@calpoly.edu
 
-Description: asdf
-
-Ideas:  
-Budget tracker - Users can track their expenses and income to create a budget. The backend would need to store information such as transaction details, budget categories, and budget limits.
-
-Airport management - track passengers, flights, and tickets. Records added or modified when an airline schedules a flight and when a passenger books a flight or cancels
+Description:  
+For our group project we are thinking of making a budgeting API. Some of the features would include tracking expenses and income for individual users, along with information on transactions they make such as what category it falls under. Some additional features might include computing trends about your spending, locating affordable products, and tracking payments between users. We might also make some sort of social media type interaction where you can make transactions public or private and "react" to them.
