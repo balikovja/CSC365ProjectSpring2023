@@ -1,7 +1,6 @@
-Technical Specifications for Our API iBudgetlyify365
+# Technical Specifications for Our API, iBudgetlyify365
 
-User stories/User requirements. Describe the flows that users will go through and how they will interact with the application.  
-
+User stories/User requirements. Describe the flows that users will go through and how they will interact with the application.
 -  Can record transactions and label those transactions under specific budgetting categories
 -  Can remove existing transactions that they've created
 -  Can enter total monthly income, and split this income into category limits
@@ -11,12 +10,30 @@ User stories/User requirements. Describe the flows that users will go through an
 -  Can view previous month's budgets
 
 
-Documentation on what endpoints you will create. This should be at the same level of detail as what I provided in Assignment 1.
+Documentation on what endpoints you will create. This should be at the same level of detail as what I provided in Assignment 1.  
+**[PUT] /add_transaction**
+- category: int
+- location: str
+- date: date
+- amount: decimal
 
-- add_transaction: 
-- 
-- 
+**[GET] /transactions/{optional params: category, location, timespan, amount}**
+- list of [
+    - category: int
+    - location: str
+    - date: date
+    - amount: decimal
+]
+- total: decimal
 
+**[GET] /budget_categories/**
+
+**[GET] /budget_summary/{params: month/year}**
+- list of [
+    - category_name: str
+    - budget: decimal
+    - spent: decimal
+]
 
 Detailed descriptions of edge cases and transaction flows. For example, if the app has a credit card checkout, describe what happens if the credit card transaction fails, what happens if the user tries to cancel mid-way through, etc.
 
