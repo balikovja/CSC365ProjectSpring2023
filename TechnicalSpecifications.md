@@ -19,9 +19,11 @@ Documentation on what endpoints you will create. This should be at the same leve
 **[DELETE] /remove_transaction**
 - transactionID
 
-**[PUT] /define_budget**
+**[PUT] /define_income**
 - income: int
 - pay_date: date
+
+**[PUT] /define_budget**
 - categories: Dictionary where key is category name (str) and value is budget amount for that category (int)
 
 **[GET] /transactions/{optional params: transactionID, category, location, timespan, amount, sort}**
