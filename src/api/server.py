@@ -1,49 +1,42 @@
 from fastapi import FastAPI
-from src.api import characters, movies, conversations, lines, pkg_util
+from src.api import budgets, pkg_util
 
 description = """
-Movie API returns dialog statistics on top hollywood movies from decades past.
+iBudgetlyify365 API allows for the development of personal budgets
+along with analytics on budgeting trends.
 
-## Characters
-
-You can:
-* **list characters with sorting and filtering options.**
-* **retrieve a specific character by id**
-
-## Movies
+## Budgets
 
 You can:
-* **list movies with sorting and filtering options.**
-* **retrieve a specific movie by id**
+* **Define an income**
+* **Define a budget**
+* **Add transactions**
+* **Remove Transactions**
+* **Get transactions (with filtering options)**
+* **View budgeting categories**
+* **View budget summaries**
 """
 tags_metadata = [
     {
-        "name": "characters",
-        "description": "Access information on characters in movies.",
-    },
-    {
-        "name": "movies",
-        "description": "Access information on top-rated movies.",
+        "name": "budgets",
+        "description": "Access information on budgets in our database.",
     },
 ]
 
 app = FastAPI(
-    title="Movie API",
+    title="iBudgetlyify365 API",
     description=description,
     version="0.0.1",
     contact={
-        "name": "Lucas Pierce",
-        "email": "lupierce@calpoly.edu",
+        "name": "Jacob Balikov, Jake Alt",
+        "email": "jbalikov@calpoly.edu, joalt@calpoly.edu",
     },
     openapi_tags=tags_metadata,
 )
-app.include_router(characters.router)
-app.include_router(movies.router)
+app.include_router(budgets.router)
 app.include_router(pkg_util.router)
-app.include_router(conversations.router)
-app.include_router(lines.router)
 
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to the Movie API. See /docs for more information."}
+    return {"message": "Welcome to the iBudgetlyify365 API. See /docs for more information."}
