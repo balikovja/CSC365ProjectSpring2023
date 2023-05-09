@@ -2,19 +2,68 @@ import sqlalchemy
 from fastapi import APIRouter, HTTPException
 from enum import Enum
 from src import database as db
+from src import user_session
 from fastapi.params import Query
 
 router = APIRouter()
 
-@router.get("/movies/{movie_id}", tags=["movies"])
-def get_budget_categories():
-    """
-    This endpoint returns your budgets categories. For each category it returns:
-    * `category_name`: The name of the category.
-    * `budget`: This category's budget allotment.
-    * `spent`: How much of the allotment has already been spent.
 
+@router.get("/categories/", tags=["info", "budgets"])
+def get_categories():
     """
+    This endpoint returns a list of all budget categories. For each category it returns:
+    * `id`: The category's internal id
+    * `name`: The name. ("Rent", "Entertainment", etc)
+    """
+    # insert code to make this work
+    sql = sqlalchemy.select(
+        db.categories.c.id,
+        db.categories.c.name
+    ).order_by(db.categories.c.name)
+
+    with db.engine.connect() as conn:
+        result = conn.execute(sql)
+        json = (
+            {
+                "id" : row.id,
+                "name" : row.name,
+            }
+            for row in result
+        )
+
+        return json
+
+
+@router.get("/my_current_budget/", tags=["budget"])
+def get_my_current_budget():
+    """
+    This endpoint returns your configured budgeting categories. For each category it returns:
+    * `category_name`: The name of the category.
+    * `allotment`: This category's budget allotment.
+    * `spent`: How much of the allotment has already been spent.
+    * `start_date`: The start date of the curent period for this category.
+    * `end_date`: The end date of the curent period for this category.
+    * `period`: The period defined for this budget (Weekly, Quarterly, etc.)
+    """
+
+    with open("src/api/queries/my_current_budget.sql") as file:
+        sql = sqlalchemy.text(file.read())
+    
+    with db.engine.connect() as conn:
+        result = conn.execute(sql, {"quserid" : user_session.user_id()})
+        json = (
+            {
+                "category_name" : row.name,
+                "allotment" : row.budget_amount,
+                "spent" : row.category_spent,
+                "start_date" : row.start_date,
+                "end_date" : row.end_date,
+                "period" : row.period_text
+            }
+            for row in result
+        )
+        return json
+    
     # insert code to make this work
 
 # THIS IS HERE AS AN EXAMPLE, DELETE WHEN NOT NEEDED ANYMORE

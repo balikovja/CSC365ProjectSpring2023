@@ -4,10 +4,17 @@ import json
 
 client = TestClient(app)
 
-def test_get_budget_categories():
-    response = client.get("/budget_categories/")
+def test_get_categories():
+    response = client.get("/categories/")
+    print (response.json())
     assert response.status_code == 200
     # complete verification that correct result was returned
+
+
+def test_get_my_current_budget():
+    response = client.get("/my_current_budget/")
+    print (response.json())
+    assert response.status_code == 200
 
 # EXAMPLES, DELETE WHEN NO LONGER NEEDED
 # def test_get_movie():
