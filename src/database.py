@@ -18,7 +18,10 @@ engine = sqlalchemy.create_engine(database_connection_url())
 
 # Create a metadata object for each table
 metadata_obj = sqlalchemy.MetaData()
+
 users = sqlalchemy.Table("users", metadata_obj, autoload_with=engine)
 transactions = sqlalchemy.Table("transactions", metadata_obj, autoload_with=engine)
-budget_categories = sqlalchemy.Table("budget_categories", metadata_obj, autoload_with=engine)
-category_types = sqlalchemy.Table("category_types", metadata_obj, autoload_with=engine)
+budgets = sqlalchemy.Table("budgets", metadata_obj, autoload_with=engine)
+tags = sqlalchemy.Table("tags", metadata_obj, autoload_with=engine)
+categories = sqlalchemy.Table("categories", metadata_obj, autoload_with=engine)
+period_types = sqlalchemy.Table("period_types", metadata_obj, autoload_with=engine)
