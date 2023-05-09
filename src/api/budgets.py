@@ -19,7 +19,7 @@ class TransactionJson(BaseModel):
 
 
 @router.post("/add_transaction/", tags=["budgets"])
-def add_transaction(transaction: TransactionJson):
+def add_transaction(includeTag: bool, transaction: TransactionJson):
     """
     This endpoint adds a transaction to the current user (currently hardcoded
     to user.id = 2 as logins are not implemented). The transaction is represented
@@ -28,10 +28,13 @@ def add_transaction(transaction: TransactionJson):
 
     The endpoint ensures that a valid category was chosen
 
+    If includeTag is true, ensures that a valid tag was chosen
+    If includeTag is false, does not add a tag
+
     The endpoint returns the id of the resulting transaction that was created
     """
     # Set your timezone
-    tz = pytz.timezone('YOUR_TIMEZONE')
+    tz = pytz.timezone('America/Los_Angeles')
 
     # Get the current time in your timezone
     current_time = datetime.datetime.now(tz)
@@ -40,29 +43,32 @@ def add_transaction(transaction: TransactionJson):
     iso_time = current_time.isoformat()
 
     with db.engine.begin() as conn:
-        stmt = sqlalchemy.select(db.categories.c.id).where(db.categories.c.name == TransactionJson.category)
+        stmt = sqlalchemy.select(db.categories.c.id).where(db.categories.c.name == transaction.category)
         result = conn.execute(stmt)
         if result.rowcount == 0:
             raise HTTPException(status_code=400, detail="invalid category (use get_categories)")
         else:
             row = result.fetchone()
-            categoryID = row['id']
-        stmt = sqlalchemy.select(db.tags.c.id).where(db.tags.c.name == TransactionJson.tag)
-        result = conn.execute(stmt)
-        if result.rowcount == 0:
-            raise HTTPException(status_code=400, detail="invalid tag (use get_tags or create_tag)")
+            categoryID = row[0]
+        if includeTag:
+            stmt = sqlalchemy.select(db.tags.c.id).where(db.tags.c.name == transaction.tag)
+            result = conn.execute(stmt)
+            if result.rowcount == 0:
+                raise HTTPException(status_code=400, detail="invalid tag (use get_tags or create_tag)")
+            else:
+                row = result.fetchone()
+                tagID = row[0]
         else:
-            row = result.fetchone()
-            tagID = row['id']
+            tagID = None
         # Insert transaction into transactions table
         transaction_values = {"created_at": iso_time,
                               "user_id": 2,
                               "category_id": categoryID,
-                              "transaction_date": TransactionJson.date,
-                              "place": TransactionJson.place,
-                              "amount": TransactionJson.amount,
+                              "transaction_date": transaction.date,
+                              "place": transaction.place,
+                              "amount": transaction.amount,
                               "tag_id": tagID,
-                              "note": TransactionJson.note}
+                              "note": transaction.note}
         transaction_stmt = db.transactions.insert().values(transaction_values).returning(db.transactions.c.id)
         transaction_result = conn.execute(transaction_stmt)
         inserted_id = transaction_result.fetchone()[0]
@@ -140,7 +146,7 @@ def transactions(
             .join(db.categories, db.categories.c.id == db.transactions.c.category_id)
             .join(db.tags, db.tags.c.id == db.transactions.c.tag_id)
             .group_by(db.transactions.c.id, db.categories.c.name, db.tags.c.name)
-            .order_by(order_by, db.characters.c.character_id)
+            .order_by(order_by)
             .where(db.transactions.c.user_id == 2)  # hardcoded to 2 currently because no login
     )
 
