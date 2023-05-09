@@ -11,7 +11,7 @@ WITH spending AS (
 )
 SELECT c.name, b.budget_amount, s.category_spent, b.start_date, b.end_date, p.name AS period_text
 FROM categories AS c
-JOIN budgets AS b ON b.category_id = c.id AND NOW() BETWEEN b.start_date AND b.end_date
+JOIN budgets AS b ON b.category_id = c.id AND CURRENT_DATE BETWEEN b.start_date AND b.end_date
 JOIN period_types AS p ON p.id = b.period_type_id
 JOIN spending AS s ON s.budget_id = b.id
 ORDER BY c.name
