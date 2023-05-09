@@ -4,6 +4,8 @@ from enum import Enum
 from src import database as db
 from src import user_session
 from fastapi.params import Query
+from pydantic import BaseModel
+from typing import Dict
 
 router = APIRouter()
 
@@ -63,67 +65,59 @@ def get_my_current_budget():
             for row in result
         )
         return json
-    
-    # insert code to make this work
 
-# THIS IS HERE AS AN EXAMPLE, DELETE WHEN NOT NEEDED ANYMORE
-# @router.get("/movies/{movie_id}", tags=["movies"])
-# def get_movie(movie_id: int):
-#     """
-#     This endpoint returns a single movie by its identifier. For each movie it returns:
-#     * `movie_id`: the internal id of the movie.
-#     * `title`: The title of the movie.
-#     * `top_characters`: A list of characters that are in the movie. The characters
-#       are ordered by the number of lines they have in the movie. The top five
-#       characters are listed.
-#
-#     Each character is represented by a dictionary with the following keys:
-#     * `character_id`: the internal id of the character.
-#     * `character`: The name of the character.
-#     * `num_lines`: The number of lines the character has in the movie.
-#
-#     """
-#     # Get the movie they asked for with its title and id
-#     stmt = (
-#         sqlalchemy.select(
-#             db.movies.c.movie_id,
-#             db.movies.c.title,
-#         )
-#             .where(db.movies.c.movie_id == movie_id)
-#     )
-#
-#     stmt2 = (
-#         sqlalchemy.select(
-#             db.characters.c.character_id,
-#             db.characters.c.name,
-#             sqlalchemy.func.count(db.lines.c.line_id).label("line_count")
-#         )
-#             .join(db.lines, db.lines.c.character_id == db.characters.c.character_id)
-#             .join(db.movies, db.movies.c.movie_id == db.characters.c.movie_id)
-#             .where(db.movies.c.movie_id == movie_id)
-#             .group_by(db.characters.c.character_id)
-#             .order_by(sqlalchemy.desc("line_count"))
-#     )
-#
-#     with db.engine.connect() as conn:
-#         result = conn.execute(stmt)
-#         result2 = conn.execute(stmt2)
-#         charJSON = []
-#         json = []
-#         if result.rowcount == 0:
-#             raise HTTPException(status_code=404, detail="movie not found.")
-#         for row in result2:
-#             charJSON.append(
-#                 {
-#                     "character_id": row.character_id,
-#                     "character": row.name,
-#                     "num_lines": row.line_count,
-#                 }
-#             )
-#         for row in result:
-#             json = {
-#                     "movie_id": row.movie_id,
-#                     "title": row.title,
-#                     "top_characters": charJSON[:5]
-#                    }
-#     return json
+# TODO: Fix types
+class BudgetDefJson(BaseModel):
+    start_date: str
+    end_date: str
+    amount: str
+    period_id: int
+
+
+class AllBudgetsDefJson(BaseModel):
+    categories: Dict[int, BudgetDefJson]
+
+@router.post("/define_budgets/", tags=["budget"])
+def post_define_budgets(budgetdef: AllBudgetsDefJson):
+    """
+    This endpoint adds budget instances for each specified category.
+    * `start_date`: The start of this budget period.
+    * `end_date`: The end of this budget period.
+    * `amount`: How much money.
+    * `period_id`: The period id defined for this budget (1: Weekly, 4: Quarterly, etc.)
+    """
+
+    # Validate category selections
+    categories = list(get_categories())
+    for cat_id in budgetdef.categories.keys():
+        if cat_id not in (cat["id"] for cat in categories):
+            raise HTTPException(status_code=400, detail=f"invalid category {cat_id} (use get_categories)")
+
+    rows_list = [
+        {
+            "user_id" : user_session.user_id(),
+            "budget_amount" : spec.amount,
+            "category_id" : cat,
+            "start_date" : spec.start_date,
+            "end_date" : spec.end_date,
+            "period_type_id" : spec.period_id
+        }
+        for cat, spec in budgetdef.categories.items()
+    ]
+
+    stmt = (
+        sqlalchemy.insert(db.budgets)
+        .values(rows_list)
+        .returning(db.budgets.c.id)
+    )
+    
+    with db.engine.begin() as conn:
+        result = conn.execute(stmt)
+        json = (
+            {
+                "budget_id" : row.id
+            }
+            for row in result
+        )
+        return json
+
