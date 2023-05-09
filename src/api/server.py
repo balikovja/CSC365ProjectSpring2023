@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from src.api import budgets, pkg_util
+from src.api import pkg_util, budgets
 
 description = """
 iBudgetlyify365 API allows for the development of personal budgets
