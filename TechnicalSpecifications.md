@@ -23,8 +23,13 @@ Documentation on what endpoints you will create. This should be at the same leve
 - income: int
 - pay_date: date
 
-**[PUT] /define_budget**
-- categories: Dictionary where key is category name (str) and value is budget amount for that category (int)
+**[POST] /define_budgets**
+- This endpoint adds budget instances for each specified category.
+    * `start_date`: The start of this budget period.
+    * `end_date`: The end of this budget period.
+    * `amount`: How much money.
+    * `period_id`: The period id defined for this budget (1: Weekly, 4: Quarterly, etc.)
+    
 
 **[GET] /transactions/{optional params: transactionID, category, location, timespan, amount, sort}**
 - list of [
@@ -36,10 +41,10 @@ Documentation on what endpoints you will create. This should be at the same leve
 ]
 - total: decimal
 
-**[GET] /budget_categories/**
+**[GET] /categories/**
 - list of [
-   - categoryID: int
-   - category_name: str
+   - id: int
+   - name: str
 ]
 
 **[GET] /budget_summary/{params: month/year}**
@@ -48,6 +53,16 @@ Documentation on what endpoints you will create. This should be at the same leve
     - budget: decimal
     - spent: decimal
 ]
+
+**[GET] /my_current_budget/**
+- This endpoint returns your configured budgeting categories. For each category it returns:
+    * `category_name`: The name of the category.
+    * `allotment`: This category's budget allotment.
+    * `spent`: How much of the allotment has already been spent.
+    * `start_date`: The start date of the curent period for this category.
+    * `end_date`: The end date of the curent period for this category.
+    * `period`: The period defined for this budget (Weekly, Quarterly, etc.)
+
 
 Detailed descriptions of edge cases and transaction flows. For example, if the app has a credit card checkout, describe what happens if the credit card transaction fails, what happens if the user tries to cancel mid-way through, etc.
 
