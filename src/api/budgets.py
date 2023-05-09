@@ -1,9 +1,67 @@
+import datetime
+from enum import Enum
+
 from fastapi import APIRouter
+from pydantic import BaseModel
+import src.database as db
 
 router = APIRouter()
 
-@router.get("/budget_categories", tags=["budgets"])
-def get_budget_categories():
+
+class TransactionJson(BaseModel):
+    category: str
+    date: datetime.date
+    place: str
+    amount: float
+    tag: str
+    note: str
+
+
+@router.post("/add_transaction/", tags=["budgets"])
+def add_transaction(transaction: TransactionJson):
+    """
+    This endpoint adds a transaction to the current user (currently hardcoded
+    to user.id = 2 as logins are not implemented). The transaction is represented
+    by the category_id, the transaction_date, the place it occurred, the amount,
+    the tag, and a note.
+
+    The endpoint ensures that a valid category was chosen
+
+    The endpoint returns the id of the resulting transaction that was created
+    """
+    # insert code to make this work
+
+
+@router.delete("/remove_transaction/", tags=["budgets"])
+def remove_transaction(id: int):
+    """
+    This endpoint removes the transaction with the given transaction id for the
+    current user (currently hardcoded to user.id = 2 as logins are not implemented)
+
+    """
+    # insert code to make this work
+
+
+class transaction_sort_options(str, Enum):
+    dateNewToOld = "dateNewToOld"
+    dateOldToNew = "dateOldToNew"
+    priceLowToHigh = "priceLowToHigh"
+    priceHighToLow = "priceHighToLow"
+    category = "category"
+    place = "place"
+
+
+@router.get("/transactions/", tags=["budgets"])
+def transactions(
+        id: int = 0,
+        category: str = "",
+        place: str = "",
+        start_date: datetime.date = datetime.date(1, 1, 1),
+        end_date: datetime.date = datetime.date.today(),
+        min_price: float = 0,
+        max_price: float = 10000000,
+        sort: transaction_sort_options = transaction_sort_options.dateNewToOld,
+):
     """
     This endpoint returns your budgets categories. For each category it returns:
     * `category_name`: The name of the category.
@@ -12,65 +70,3 @@ def get_budget_categories():
 
     """
     # insert code to make this work
-
-# THIS IS HERE AS AN EXAMPLE, DELETE WHEN NOT NEEDED ANYMORE
-# @router.get("/movies/{movie_id}", tags=["movies"])
-# def get_movie(movie_id: int):
-#     """
-#     This endpoint returns a single movie by its identifier. For each movie it returns:
-#     * `movie_id`: the internal id of the movie.
-#     * `title`: The title of the movie.
-#     * `top_characters`: A list of characters that are in the movie. The characters
-#       are ordered by the number of lines they have in the movie. The top five
-#       characters are listed.
-#
-#     Each character is represented by a dictionary with the following keys:
-#     * `character_id`: the internal id of the character.
-#     * `character`: The name of the character.
-#     * `num_lines`: The number of lines the character has in the movie.
-#
-#     """
-#     # Get the movie they asked for with its title and id
-#     stmt = (
-#         sqlalchemy.select(
-#             db.movies.c.movie_id,
-#             db.movies.c.title,
-#         )
-#             .where(db.movies.c.movie_id == movie_id)
-#     )
-#
-#     stmt2 = (
-#         sqlalchemy.select(
-#             db.characters.c.character_id,
-#             db.characters.c.name,
-#             sqlalchemy.func.count(db.lines.c.line_id).label("line_count")
-#         )
-#             .join(db.lines, db.lines.c.character_id == db.characters.c.character_id)
-#             .join(db.movies, db.movies.c.movie_id == db.characters.c.movie_id)
-#             .where(db.movies.c.movie_id == movie_id)
-#             .group_by(db.characters.c.character_id)
-#             .order_by(sqlalchemy.desc("line_count"))
-#     )
-#
-#     with db.engine.connect() as conn:
-#         result = conn.execute(stmt)
-#         result2 = conn.execute(stmt2)
-#         charJSON = []
-#         json = []
-#         if result.rowcount == 0:
-#             raise HTTPException(status_code=404, detail="movie not found.")
-#         for row in result2:
-#             charJSON.append(
-#                 {
-#                     "character_id": row.character_id,
-#                     "character": row.name,
-#                     "num_lines": row.line_count,
-#                 }
-#             )
-#         for row in result:
-#             json = {
-#                     "movie_id": row.movie_id,
-#                     "title": row.title,
-#                     "top_characters": charJSON[:5]
-#                    }
-#     return json
