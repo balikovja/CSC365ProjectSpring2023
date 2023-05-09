@@ -25,3 +25,5 @@ budgets = sqlalchemy.Table("budgets", metadata_obj, autoload_with=engine)
 tags = sqlalchemy.Table("tags", metadata_obj, autoload_with=engine)
 categories = sqlalchemy.Table("categories", metadata_obj, autoload_with=engine)
 period_types = sqlalchemy.Table("period_types", metadata_obj, autoload_with=engine)
+
+print(metadata_obj)

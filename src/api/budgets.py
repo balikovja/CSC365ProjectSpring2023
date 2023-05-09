@@ -1,12 +1,8 @@
-import sqlalchemy
-from fastapi import APIRouter, HTTPException
-from enum import Enum
-from src import database as db
-from fastapi.params import Query
+from fastapi import APIRouter
 
 router = APIRouter()
 
-@router.get("/movies/{movie_id}", tags=["movies"])
+@router.get("/budget_categories", tags=["budgets"])
 def get_budget_categories():
     """
     This endpoint returns your budgets categories. For each category it returns:
