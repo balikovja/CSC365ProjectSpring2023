@@ -1,7 +1,8 @@
 import datetime
 from enum import Enum
-
-from fastapi import APIRouter
+import pytz
+import sqlalchemy
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import src.database as db
 
@@ -29,7 +30,43 @@ def add_transaction(transaction: TransactionJson):
 
     The endpoint returns the id of the resulting transaction that was created
     """
-    # insert code to make this work
+    # Set your timezone
+    tz = pytz.timezone('YOUR_TIMEZONE')
+
+    # Get the current time in your timezone
+    current_time = datetime.datetime.now(tz)
+
+    # Convert the datetime to ISO 8601 format
+    iso_time = current_time.isoformat()
+
+    with db.engine.begin() as conn:
+        stmt = sqlalchemy.select(db.categories.c.id).where(db.categories.c.name == TransactionJson.category)
+        result = conn.execute(stmt)
+        if result.rowcount == 0:
+            raise HTTPException(status_code=400, detail="invalid category (use get_categories)")
+        else:
+            row = result.fetchone()
+            categoryID = row['id']
+        stmt = sqlalchemy.select(db.tags.c.id).where(db.tags.c.name == TransactionJson.tag)
+        result = conn.execute(stmt)
+        if result.rowcount == 0:
+            raise HTTPException(status_code=400, detail="invalid tag (use get_tags or create_tag)")
+        else:
+            row = result.fetchone()
+            tagID = row['id']
+        # Insert transaction into transactions table
+        transaction_values = {"created_at": iso_time,
+                              "user_id": 2,
+                              "category_id": categoryID,
+                              "transaction_date": TransactionJson.date,
+                              "place": TransactionJson.place,
+                              "amount": TransactionJson.amount,
+                              "tag_id": tagID,
+                              "note": TransactionJson.note}
+        transaction_stmt = db.transactions.insert().values(transaction_values).returning(db.transactions.c.id)
+        transaction_result = conn.execute(transaction_stmt)
+        inserted_id = transaction_result.fetchone()[0]
+    return inserted_id
 
 
 @router.delete("/remove_transaction/", tags=["budgets"])
@@ -37,9 +74,11 @@ def remove_transaction(id: int):
     """
     This endpoint removes the transaction with the given transaction id for the
     current user (currently hardcoded to user.id = 2 as logins are not implemented)
-
     """
-    # insert code to make this work
+    stmt = sqlalchemy.delete(db.transactions).where(db.transactions.c.id == id)
+    stmt = stmt.where(db.transactions.c.user_id == 2)  # hardcoded to 2 currently because no login
+    with db.engine.begin() as conn:
+        conn.execute(stmt)
 
 
 class transaction_sort_options(str, Enum):
@@ -69,4 +108,76 @@ def transactions(
     * `spent`: How much of the allotment has already been spent.
 
     """
-    # insert code to make this work
+    # First configure sort
+    if sort is transaction_sort_options.dateNewToOld:
+        order_by = sqlalchemy.desc(db.transactions.c.transaction_date)
+    elif sort is transaction_sort_options.dateOldToNew:
+        order_by = sqlalchemy.asc(db.transactions.c.transaction_date)
+    elif sort is transaction_sort_options.place:
+        order_by = db.transactions.c.place
+    elif sort is transaction_sort_options.category:
+        order_by = db.transactions.c.category
+    elif sort is transaction_sort_options.priceHighToLow:
+        order_by = sqlalchemy.desc(db.transactions.c.amount)
+    elif sort is transaction_sort_options.priceLowToHigh:
+        order_by = sqlalchemy.asc(db.transactions.c.amount)
+    else:
+        assert False
+
+    # Get all necessary fields with the proper limit, offset, and sort
+    stmt = (
+        sqlalchemy.select(
+            db.transactions.c.id,
+            db.transactions.c.created_at,
+            db.transactions.c.user_id,
+            db.categories.c.name.label('category_name'),
+            db.transactions.c.transaction_date,
+            db.transactions.c.place,
+            db.transactions.c.amount,
+            db.tags.c.name.label('tag_name'),
+            db.transactions.c.note,
+        )
+            .join(db.categories, db.categories.c.id == db.transactions.c.category_id)
+            .join(db.tags, db.tags.c.id == db.transactions.c.tag_id)
+            .group_by(db.transactions.c.id, db.categories.c.name, db.tags.c.name)
+            .order_by(order_by, db.characters.c.character_id)
+            .where(db.transactions.c.user_id == 2)  # hardcoded to 2 currently because no login
+    )
+
+    # filter only if id parameter is passed
+    if id != 0:
+        stmt = stmt.where(db.transactions.c.id == id)
+
+    # filter only if place parameter is passed
+    if place != "":
+        stmt = stmt.where(db.transactions.c.place.ilike(f"%{place}%"))
+
+    # filter only if category parameter is passed
+    if category != "":
+        stmt = stmt.where(db.categories.c.name.ilike(f"%{category}%"))
+
+    # filter by start and end date
+    stmt = stmt.where(sqlalchemy.between(db.transactions.c.transaction_date, start_date, end_date))
+
+    # filter by min and max price
+    stmt = stmt.where(sqlalchemy.between(db.transactions.c.amount, min_price, max_price))
+
+    with db.engine.connect() as conn:
+        result = conn.execute(stmt)
+        json = []
+        for row in result:
+            json.append(
+                {
+                    "transaction_id": row.id,
+                    "created_at": row.created_at,
+                    "user_id": row.user_id,
+                    "category": row.category_name,
+                    "date": row.transaction_date,
+                    "place": row.place,
+                    "amount": row.amount,
+                    "tag": row.tag_name,
+                    "note": row.note,
+                }
+            )
+
+    return json
