@@ -1,6 +1,6 @@
 import datetime
 from enum import Enum
-import pytz
+#import pytz
 import sqlalchemy
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -34,10 +34,10 @@ def add_transaction(includeTag: bool, transaction: TransactionJson):
     The endpoint returns the id of the resulting transaction that was created
     """
     # Set your timezone
-    tz = pytz.timezone('America/Los_Angeles')
+    #tz = pytz.timezone('America/Los_Angeles')
 
     # Get the current time in your timezone
-    current_time = datetime.datetime.now(tz)
+    current_time = datetime.datetime.now()
 
     # Convert the datetime to ISO 8601 format
     iso_time = current_time.isoformat()
