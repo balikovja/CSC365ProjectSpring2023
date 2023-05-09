@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from src.api import pkg_util, budgets
+from src.api import pkg_util, budget, transactions
 
 description = """
 iBudgetlyify365 API allows for the development of personal budgets
@@ -33,7 +33,8 @@ app = FastAPI(
     },
     openapi_tags=tags_metadata,
 )
-app.include_router(budgets.router)
+app.include_router(budget.router)
+app.include_router(transactions.router)
 app.include_router(pkg_util.router)
 
 
