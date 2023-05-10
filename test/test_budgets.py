@@ -10,7 +10,7 @@ client = TestClient(app)
 
 def test_get_categories():
     response = client.get("/categories/")
-    print (response.json())
+    print(response.json())
     assert response.status_code == 200
     # complete verification that correct result was returned
 
