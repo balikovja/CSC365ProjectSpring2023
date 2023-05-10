@@ -1,7 +1,7 @@
 from fastapi.testclient import TestClient
 from src.api.server import app
 import json
-import user_session
+from src import user_session
 
 user_session.test_user()
 
@@ -10,7 +10,7 @@ client = TestClient(app)
 
 def test_get_categories():
     response = client.get("/categories/")
-    print (response.json())
+    print(response.json())
     assert response.status_code == 200
     # complete verification that correct result was returned
 
