@@ -9,3 +9,4 @@ README.md
 schema_creation.sql
 TechnicalSpecifications.md
 supabase
+**/__pycache__
