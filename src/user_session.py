@@ -1,4 +1,5 @@
 
+# TODO: use session keys
 
 # TODO: remove public user
 logged_in_users = [2]

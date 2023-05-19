@@ -10,3 +10,4 @@ schema_creation.sql
 TechnicalSpecifications.md
 supabase
 **/__pycache__
+alembic
