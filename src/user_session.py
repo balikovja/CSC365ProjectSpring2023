@@ -1,6 +1,10 @@
 
-logged_in_users = []
 
+# TODO: remove public user
+logged_in_users = [2]
+
+
+#TODO: login time out
 
 def check_logged_in(user_id):
 	return user_id in logged_in_users
