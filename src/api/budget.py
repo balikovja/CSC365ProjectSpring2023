@@ -37,7 +37,7 @@ def get_categories():
         return json
 
 
-@router.get("/{user_id}/my_current_budget/", tags=["budget"])
+@router.get("/{user_id}/current_budget/", tags=["budget"])
 def get_my_current_budget(user_id: int):
     """
     This endpoint returns your configured budgeting categories. For each category it returns:
@@ -83,8 +83,8 @@ class BudgetDefJson(BaseModel):
 class AllBudgetsDefJson(BaseModel):
     categories: Dict[int, BudgetDefJson]
 
-@router.post("/define_budgets/", tags=["budget"])
-def post_define_budgets(budgetdef: AllBudgetsDefJson):
+@router.post("/{user_id}/budgets/", tags=["budget"])
+def post_define_budgets(user_id: int, budgetdef: AllBudgetsDefJson):
     """
     This endpoint adds budget instances for each specified category.
     * `start_date`: The start of this budget period.
@@ -92,6 +92,8 @@ def post_define_budgets(budgetdef: AllBudgetsDefJson):
     * `amount`: How much money.
     * `period_id`: The period id defined for this budget (1: Weekly, 4: Quarterly, etc.)
     """
+    if not user_session.check_logged_in(user_id):
+        raise HTTPException(403, "Not logged in")
 
     # Validate category selections
     categories = list(get_categories())
