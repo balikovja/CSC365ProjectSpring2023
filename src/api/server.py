@@ -18,8 +18,8 @@ You can:
 """
 tags_metadata = [
     {
-        "name": "budgets",
-        "description": "Access information on budgets in our database.",
+        "name": "transactions",
+        "description": "Access/Edit/Upload information on transactions in our database.",
     },
 ]
 
