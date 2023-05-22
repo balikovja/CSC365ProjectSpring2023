@@ -10,7 +10,7 @@ from typing import Dict
 router = APIRouter()
 
 
-@router.get("/categories/", tags=["info", "budgets"])
+@router.get("/categories/", tags=["budget"])
 def get_categories():
     """
     This endpoint returns a list of all budget categories. For each category it returns:
