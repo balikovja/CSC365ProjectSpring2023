@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from src.api import pkg_util, budget, transactions
+from src.api import pkg_util, budget, transactions, tags
 
 description = """
 iBudgetlyify365 API allows for the development of personal budgets
@@ -21,6 +21,10 @@ tags_metadata = [
         "name": "transactions",
         "description": "Access/Edit/Upload information on transactions in our database.",
     },
+    {
+        "name": "tags",
+        "description": "Access/Edit/Create information on tags in our database",
+    },
 ]
 
 app = FastAPI(
@@ -35,6 +39,7 @@ app = FastAPI(
 )
 app.include_router(budget.router)
 app.include_router(transactions.router)
+app.include_router(tags.router)
 app.include_router(pkg_util.router)
 
 

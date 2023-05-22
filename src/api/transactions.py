@@ -225,35 +225,51 @@ def update_transaction(
             if result.rowcount == 0:
                 raise HTTPException(status_code=400, detail="invalid category (use get_categories)")
             else:
-                row = result.fetchone()
-                categoryID = row[0]
-                setattr(db_transaction, 'category_id', categoryID)
-                # db_transaction.category_id = categoryID
+                stmt = (
+                    sqlalchemy.update(db.transactions)
+                        .values(category_id=category)
+                        .where(db.transactions.c.id == id)
+                )
+                conn.execute(stmt)
         if tag is not None:
             stmt = sqlalchemy.select(db.tags.c.id).where(db.tags.c.id == tag)
             result = conn.execute(stmt)
             if result.rowcount == 0:
                 raise HTTPException(status_code=400, detail="invalid tag (use get_tags or create_tag)")
             else:
-                row = result.fetchone()
-                tagID = row[0]
-                setattr(db_transaction, 'tag_id', tagID)
-                # db_transaction.tag_id = tagID
+                stmt = (
+                    sqlalchemy.update(db.transactions)
+                        .values(tag_id=category)
+                        .where(db.transactions.c.id == id)
+                )
+                conn.execute(stmt)
         if date is not None:
-            setattr(db_transaction, 'transaction_date', date)
-            # db_transaction.transaction_date = date
+            stmt = (
+                sqlalchemy.update(db.transactions)
+                    .values(transaction_date=date)
+                    .where(db.transactions.c.id == id)
+            )
+            conn.execute(stmt)
         if place is not None:
-            setattr(db_transaction, 'place', place)
-            # db_transaction.place = place
+            stmt = (
+                sqlalchemy.update(db.transactions)
+                    .values(place=place)
+                    .where(db.transactions.c.id == id)
+            )
+            conn.execute(stmt)
         if amount is not None:
-            setattr(db_transaction, 'amount', amount)
-            # db_transaction.amount = amount
+            stmt = (
+                sqlalchemy.update(db.transactions)
+                    .values(amount=amount)
+                    .where(db.transactions.c.id == id)
+            )
+            conn.execute(stmt)
     return {"message": "Transaction updated successfully"}
 
 
-@router.put("/transactions/{transaction_id}/split", tags=["transactions"])
+@router.put("/transactions/{id}/split", tags=["transactions"])
 def split_transaction(
-        transaction_id: int,
+        id: int,
         transaction1_amount: int,
         transaction1_category: int,
         transaction2_amount: int,
@@ -274,7 +290,7 @@ def split_transaction(
     The endpoint ensures that valid tags were chosen, if chosen
     """
     with db.engine.begin() as conn:
-        stmt = sqlalchemy.select(db.transactions).where(db.transactions.c.id == transaction_id)
+        stmt = sqlalchemy.select(db.transactions).where(db.transactions.c.id == id)
         stmt = stmt.where(db.transactions.c.user_id == 2)  # hardcoded user_id
         result = conn.execute(stmt)
         if result.rowcount == 0:
@@ -338,5 +354,5 @@ def split_transaction(
             note=db_transaction.note
         ))
         # remove original transaction
-        remove_transaction(id=transaction_id)
+        remove_transaction(id=id)
     return newTrans1, newTrans2
