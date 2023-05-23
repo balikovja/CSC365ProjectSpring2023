@@ -6,6 +6,7 @@ from src import user_session
 from fastapi.params import Query
 from pydantic import BaseModel
 from typing import Dict
+from datetime import datetime
 
 router = APIRouter()
 
@@ -35,9 +36,12 @@ def get_categories():
 
         return json
 
+# Wrapper to allow mocking
+def datetime_today():
+    return datetime.today()
 
-@router.get("/my_current_budget/", tags=["budget"])
-def get_my_current_budget():
+@router.get("/{user_id}/current_budget/", tags=["budget"])
+def get_my_current_budget(user_id: int):
     """
     This endpoint returns your configured budgeting categories. For each category it returns:
     * `category_name`: The name of the category.
@@ -47,12 +51,17 @@ def get_my_current_budget():
     * `end_date`: The end date of the curent period for this category.
     * `period`: The period defined for this budget (Weekly, Quarterly, etc.)
     """
+    #  TODO: login
+    # if not user_session.check_logged_in(user_id):
+    #     raise HTTPException(403, "Not logged in")
 
     with open("src/api/queries/my_current_budget.sql") as file:
         sql = sqlalchemy.text(file.read())
+
+    current_date = datetime_today().strftime("%Y-%m-%d")
     
     with db.engine.connect() as conn:
-        result = conn.execute(sql, {"quserid" : user_session.user_id()})
+        result = conn.execute(sql, {"quserid" : user_id, "qcurrent_date" : current_date})
         json = (
             {
                 "category_name" : row.name,
@@ -77,8 +86,8 @@ class BudgetDefJson(BaseModel):
 class AllBudgetsDefJson(BaseModel):
     categories: Dict[int, BudgetDefJson]
 
-@router.post("/define_budgets/", tags=["budget"])
-def post_define_budgets(budgetdef: AllBudgetsDefJson):
+@router.post("/{user_id}/budgets/", tags=["budget"])
+def post_define_budgets(user_id: int, budgetdef: AllBudgetsDefJson):
     """
     This endpoint adds budget instances for each specified category.
     * `start_date`: The start of this budget period.
@@ -86,6 +95,8 @@ def post_define_budgets(budgetdef: AllBudgetsDefJson):
     * `amount`: How much money.
     * `period_id`: The period id defined for this budget (1: Weekly, 4: Quarterly, etc.)
     """
+    if not user_session.check_logged_in(user_id):
+        raise HTTPException(403, "Not logged in")
 
     # Validate category selections
     categories = list(get_categories())

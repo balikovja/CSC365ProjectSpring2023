@@ -4,3 +4,10 @@ test
 .ruff_cache
 .vscode
 .git
+ER Diagram.svg
+README.md
+schema_creation.sql
+TechnicalSpecifications.md
+supabase
+**/__pycache__
+alembic
