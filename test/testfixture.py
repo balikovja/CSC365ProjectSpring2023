@@ -17,8 +17,8 @@ def database_connection_url():
 def prepare_db(conn):
 	users_stmt = sa.text(
 		"""
-		INSERT INTO users (id, username)
-		VALUES (1, 'test_user'),
+		INSERT INTO users (id, username) VALUES
+		(1, 'test_user'),
 		(2, 'test_user2');
 		"""
 	)
@@ -36,8 +36,9 @@ def cleanup_db(conn):
 		"""
 	)
 	conn.execute(stmt)
-	pass
 
+
+# Clears database and yields a database engine with admin permissions
 @pytest.fixture
 def db_test_fixture():
 	engine = sa.create_engine(database_connection_url())

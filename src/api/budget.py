@@ -6,7 +6,7 @@ from src import user_session
 from fastapi.params import Query
 from pydantic import BaseModel
 from typing import Dict
-import datetime
+from datetime import datetime
 
 router = APIRouter()
 
@@ -36,6 +36,9 @@ def get_categories():
 
         return json
 
+# Wrapper to allow mocking
+def datetime_today():
+    return datetime.today()
 
 @router.get("/{user_id}/current_budget/", tags=["budget"])
 def get_my_current_budget(user_id: int):
@@ -48,14 +51,14 @@ def get_my_current_budget(user_id: int):
     * `end_date`: The end date of the curent period for this category.
     * `period`: The period defined for this budget (Weekly, Quarterly, etc.)
     """
-
-    if not user_session.check_logged_in(user_id):
-        raise HTTPException(403, "Not logged in")
+    #  TODO: login
+    # if not user_session.check_logged_in(user_id):
+    #     raise HTTPException(403, "Not logged in")
 
     with open("src/api/queries/my_current_budget.sql") as file:
         sql = sqlalchemy.text(file.read())
 
-    current_date = datetime.datetime.today().strftime("%Y-%m-%d")
+    current_date = datetime_today().strftime("%Y-%m-%d")
     
     with db.engine.connect() as conn:
         result = conn.execute(sql, {"quserid" : user_id, "qcurrent_date" : current_date})
