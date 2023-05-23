@@ -191,3 +191,60 @@ def test_get_my_current_budget2(db_test_fixture, mocker):
         assert x["end_date"] == budget_end[cat_id], cat_id
         assert x["period"] == budget_period[cat_id], cat_id
 
+def test_get_budget(db_test_fixture):
+    engine = db_test_fixture
+    expect =  [
+    {"category": categories[1],
+     "start_date": "2023-01-01",
+     "end_date": "2023-01-31",
+     "amount": 100,
+     "period": "Monthly"},
+    {"category": categories[2],
+     "start_date": "2023-01-01",
+     "end_date": "2023-12-31",
+     "amount": 200,
+     "period": "Annual"},
+    {"category": categories[3],
+     "start_date": "2023-01-03",
+     "end_date": "2023-02-02",
+     "amount": 300,
+     "period": "Monthly"},
+    {"category": categories[4],
+     "start_date": "2022-04-01",
+     "end_date": "2023-03-31",
+     "amount": 400,
+     "period": "Annual"},
+    {"category": categories[5],
+     "start_date": "2023-01-01",
+     "end_date": "2023-03-31",
+     "amount": 500,
+     "period": "Quarterly"},
+    {"category": categories[6],
+     "start_date": "2023-01-01",
+     "end_date": "2023-01-14",
+     "amount": 600,
+     "period": "Biweekly"},
+    {"category": categories[7],
+     "start_date": "2023-01-01",
+     "end_date": "2023-01-07",
+     "amount": 700,
+     "period": "Weekly"},
+    {"category": categories[8],
+     "start_date": "2022-12-25",
+     "end_date": "2023-01-24",
+     "amount": 800,
+     "period": "Monthly"},
+    {"category": categories[7],
+     "start_date": "2023-01-08",
+     "end_date": "2023-01-14",
+     "amount": 700,
+     "period": "Weekly"}
+    ]
+    expect.sort(key=lambda x: (x["start_date"], x["amount"]))
+    data_loader.load_budgets(engine)
+    response = client.get("/1/budgets/")
+    assert response.status_code == 200
+    j = response.json()
+    for x in j:
+        del x["budget_id"] # ignoring id
+    assert j == expect

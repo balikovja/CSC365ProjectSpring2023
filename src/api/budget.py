@@ -1,6 +1,8 @@
 import sqlalchemy
 from fastapi import APIRouter, HTTPException
 from enum import Enum
+
+from sqlalchemy.sql.operators import as_
 from src import database as db
 from src import user_session
 from fastapi.params import Query
@@ -141,12 +143,12 @@ def post_define_budgets(user_id: int, budgetdef: AllBudgetsDefJson):
         return json
 
 @router.get("/{user_id}/budgets/", tags=["budget"])
-def get_budgets(user_id: int, category: str):
+def get_budgets(user_id: int, category: str = None):
     """
     This endpoint returns a list of all budgets for the current user
     Optionally filtered by category
     * `budget_id`: Internal budget id
-    * `category_name`: The category associated with this budget
+    * `category`: The category associated with this budget
     * `start_date`: The start of this budget period.
     * `end_date`: The end of this budget period.
     * `amount`: How much money.
@@ -160,15 +162,16 @@ def get_budgets(user_id: int, category: str):
 
     stmt = (sqlalchemy.select(
         db.budgets.c.id,
-        db.categories.c.name,
+        db.categories.c.name.label("categoryname"),
         db.budgets.c.start_date,
         db.budgets.c.end_date,
         db.budgets.c.budget_amount,
-        db.period_types.c.name
+        db.period_types.c.name.label("period")
         )
     .join(db.categories, db.categories.c.id == db.budgets.c.category_id)
     .join(db.period_types, db.period_types.c.id == db.budgets.c.period_type_id)
     .where(db.budgets.c.user_id == user_id)
+    .order_by(db.budgets.c.start_date, db.budgets.c.budget_amount)
     )
     if category:
         stmt = stmt.where(db.categories.c.name.lower() == category.lower())
@@ -178,11 +181,11 @@ def get_budgets(user_id: int, category: str):
         json = (
             {
                 "budget_id" : row.id,
-                "category_name" : row.category_id,
+                "category" : row.categoryname,
                 "start_date" : row.start_date,
                 "end_date" : row.end_date,
                 "amount" : row.budget_amount,
-                "period" : row.period_type_id
+                "period" : row.period
             }
             for row in result
         )
