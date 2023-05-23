@@ -21,6 +21,16 @@ def upgrade() -> None:
         sql = file.read()
     op.execute(sa.text(sql))
 
+    # roles config
+    sql = (
+        """
+        GRANT INSERT ON transactions, budgets, users, tags TO servicerole;
+        GRANT UPDATE ON transactions, budgets, users, tags TO servicerole;
+        GRANT DELETE ON transactions, budgets, users, tags TO servicerole;
+        """
+    )
+    op.execute(sa.text(sql))
+
 
 def downgrade() -> None:
     op.drop_table("transactions")
