@@ -241,6 +241,7 @@ def test_get_budget(db_test_fixture):
      "period": "Weekly"}
     ]
     expect.sort(key=lambda x: (x["start_date"], x["amount"]))
+    data_loader.load_transactions(engine)
     data_loader.load_budgets(engine)
     response = client.get("/1/budgets/")
     assert response.status_code == 200
