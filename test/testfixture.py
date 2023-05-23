@@ -18,7 +18,8 @@ def prepare_db(conn):
 	users_stmt = sa.text(
 		"""
 		INSERT INTO users (id, username)
-		VALUES (1, 'test_user');
+		VALUES (1, 'test_user'),
+		(2, 'test_user2');
 		"""
 	)
 	conn.execute(users_stmt)
@@ -29,6 +30,7 @@ def cleanup_db(conn):
 		"""
 		DELETE FROM transactions;
 		DELETE FROM budgets;
+		DELETE FROM tags;
 		DELETE FROM users;
 
 		"""
@@ -42,4 +44,4 @@ def db_test_fixture():
 	with engine.begin() as conn:
 		cleanup_db(conn)
 		prepare_db(conn)
-	yield
+	yield engine
