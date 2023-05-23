@@ -143,7 +143,7 @@ def get_transactions(
             db.transactions.c.note,
         )
             .join(db.categories, db.categories.c.id == db.transactions.c.category_id)
-            .join(db.tags, db.tags.c.id == db.transactions.c.tag_id)
+            .join(db.tags, db.tags.c.id == db.transactions.c.tag_id, isouter=True)
             .group_by(db.transactions.c.id, db.categories.c.name, db.tags.c.name)
             .order_by(order_by)
             .where(db.transactions.c.user_id == 2)  # hardcoded to 2 currently because no login
