@@ -198,7 +198,8 @@ def update_transaction(
         tag: int = None,
         place: str = None,
         date: datetime.date = None,
-        amount: float = None
+        amount: float = None,
+        note: str = None
 ):
     """
     This endpoint updates a transaction of the given id of the current user
@@ -261,6 +262,13 @@ def update_transaction(
             stmt = (
                 sqlalchemy.update(db.transactions)
                     .values(amount=amount)
+                    .where(db.transactions.c.id == id)
+            )
+            conn.execute(stmt)
+        if note is not None:
+            stmt = (
+                sqlalchemy.update(db.transactions)
+                    .values(note=note)
                     .where(db.transactions.c.id == id)
             )
             conn.execute(stmt)

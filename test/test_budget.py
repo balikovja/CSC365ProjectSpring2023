@@ -3,18 +3,14 @@ from fastapi.testclient import TestClient
 from src.api.server import app
 import json
 from src import user_session
-
 from test.testfixture import db_test_fixture
 from pytest_mock import mocker
-
 from test.test_data import data_loader
 
 client = TestClient(app)
 
 
-
 def test_get_categories(db_test_fixture):
-    engine = db_test_fixture
     categories = {
         1: 'Rent',
         2: 'Groceries',
@@ -45,4 +41,3 @@ def test_get_my_current_budget(db_test_fixture, mocker):
     response = client.get("/1/current_budget/")
     print (response.json())
     assert response.status_code == 200
-
