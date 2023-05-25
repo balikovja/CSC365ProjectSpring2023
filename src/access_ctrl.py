@@ -1,23 +1,49 @@
+import random
+import datetime
+import secrets
 
-# TODO: use session keys
-
-# TODO: remove public user
-logged_in_users = [2]
+sessions = {}
 
 
-#TODO: login time out
+# 15 minutes time out
+LOGIN_TIME_OUT = datetime.timedelta(minutes=15)
 
-def check_logged_in(user_id):
-	return user_id in logged_in_users
+SESS_KEY_BYTES = 10
+GC_PROBABLILTY = 1/20
+
+def session_gc():
+    for key, s in sessions.items():
+        if expiredq(s["ts"]):
+            sessions.pop(key)
+
+def _dt_now() -> datetime.datetime:
+    return datetime.datetime.now()
+
+def expiredq(timestamp: datetime.datetime):
+    return (_dt_now() - timestamp) > LOGIN_TIME_OUT
+
+def check_logged_in(key):
+    if key in sessions:
+        if expiredq(sessions[key]["ts"]):
+            sessions.pop(key)
+            return None
+        sessions[key]["ts"] = _dt_now()
+        return sessions[key]["uid"]
+    return None
 
 def login(user_id):
-	if user_id in logged_in_users:
-		return -1
-	logged_in_users.append(user_id)
-	return 0
+    key = None
+    while key is None or key in sessions:
+        key = secrets.token_urlsafe(SESS_KEY_BYTES)
+    sessions[key] = {
+        "uid" : user_id,
+        "ts" : _dt_now()
+    }
+    # occasionally clean up abandoned sessions
+    if random.random() < GC_PROBABLILTY:
+        session_gc()
+    return key
 
-def logout(user_id):
-	if user_id in logged_in_users:
-		logged_in_users.remove(user_id)
-		return 0
-	return -1
+def logout(key):
+    if key in sessions:
+        sessions.pop(key)
