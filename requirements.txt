@@ -8,8 +8,6 @@ pre-commit
 pydantic
 pytz
 bcrypt
-random
 cryptography>=3.4.7
-pyOpenSSL
 secrets
 pytest-mock
