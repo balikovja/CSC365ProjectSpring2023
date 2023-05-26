@@ -87,7 +87,7 @@ class BudgetDefJson(BaseModel):
 
 
 class AllBudgetsDefJson(BaseModel):
-    categories: Dict[int, BudgetDefJson]
+    categories: Dict[int, BudgetDefJson] # TODO: Name for int
 
 @router.post("/budgets/", tags=["budget"])
 def post_define_budgets(session_key: str, budgetdef: AllBudgetsDefJson):
@@ -107,16 +107,20 @@ def post_define_budgets(session_key: str, budgetdef: AllBudgetsDefJson):
 
     # TODO: perhaps remove this, substitute for better error handling in the execution
     # Validate category selections
-    categories = list(get_categories())
-    for cat_id in budgetdef.categories.keys():
-        if cat_id not in (cat["id"] for cat in categories):
-            raise HTTPException(status_code=400, detail=f"invalid category {cat_id} (use get_categories)")
+    try:
+        categories = list(get_categories())
+        for cat_id in budgetdef.categories.keys():
+            cat_id = int(cat_id)
+            if cat_id not in (cat["id"] for cat in categories):
+                raise
+    except:
+        raise HTTPException(status_code=400, detail=f"invalid category (use get_categories)")
 
     rows_list = [
         {
             "user_id" : user_id,
             "budget_amount" : spec.amount,
-            "category_id" : cat,
+            "category_id" : int(cat),
             "start_date" : spec.start_date,
             "end_date" : spec.end_date,
             "period_type_id" : spec.period_id
@@ -127,7 +131,7 @@ def post_define_budgets(session_key: str, budgetdef: AllBudgetsDefJson):
         stmt = (
             sqlalchemy.insert(db.budgets)
             .values(rows_list)
-            .returning(db.budgets.c.id)
+            .returning(db.budgets.c.category_id, db.budgets.c.id)
         )
     except Exception as e:
         raise HTTPException(400, detail=e)
