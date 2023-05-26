@@ -9,7 +9,7 @@ pydantic
 pytz
 bcrypt
 random
-cryptography
-openssl
+cryptography>=3.4.7
+pyOpenSSL
 secrets
 pytest-mock
