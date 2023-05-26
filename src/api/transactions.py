@@ -5,26 +5,26 @@ import sqlalchemy
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import src.database as db
+from src.access_ctrl import check_logged_in
 
 router = APIRouter()
 
 
 class TransactionJson(BaseModel):
-    category: int
+    category: int = 1
     date: datetime.date
     place: str
     amount: float
-    tag: int
+    tag: int = None
     note: str
 
 
 @router.post("/transactions/", tags=["transactions"])
-def add_transaction(transaction: TransactionJson):
+def add_transaction(session_key: str, transaction: TransactionJson):
     """
-    This endpoint adds a transaction to the current user (currently hardcoded
-    to user.id = 2 as logins are not implemented). The transaction is represented
-    by the category_id, the transaction_date, the place it occurred, the amount,
-    the tag, and a note.
+    This endpoint adds a transaction to the current user. The transaction is
+    represented by the category_id, the transaction_date, the place it occurred,
+    the amount, the tag, and a note.
 
     The endpoint ensures that a valid category was chosen
 
@@ -32,6 +32,13 @@ def add_transaction(transaction: TransactionJson):
 
     The endpoint returns the id of the resulting transaction that was created
     """
+    userId = check_logged_in(session_key)
+    if userId is None:
+        raise HTTPException(
+            status_code=401,
+            detail="You must be logged in to access this endpoint",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     # Set your timezone
     tz = pytz.timezone('America/Los_Angeles')
 
@@ -49,16 +56,19 @@ def add_transaction(transaction: TransactionJson):
         else:
             row = result.fetchone()
             categoryID = row[0]
-        stmt = sqlalchemy.select(db.tags.c.id).where(db.tags.c.id == transaction.tag)
-        result = conn.execute(stmt)
-        if result.rowcount == 0:
-            raise HTTPException(status_code=400, detail="invalid tag (use get_tags or create_tag)")
+        if transaction.tag is not None:
+            stmt = sqlalchemy.select(db.tags.c.id).where(db.tags.c.id == transaction.tag)
+            result = conn.execute(stmt)
+            if result.rowcount == 0:
+                raise HTTPException(status_code=400, detail="invalid tag (use get_tags or create_tag)")
+            else:
+                row = result.fetchone()
+                tagID = row[0]
         else:
-            row = result.fetchone()
-            tagID = row[0]
+            tagID = None
         # Insert transaction into transactions table
         transaction_values = {"created_at": iso_time,
-                              "user_id": 2,
+                              "user_id": userId,
                               "category_id": categoryID,
                               "transaction_date": transaction.date,
                               "place": transaction.place,
@@ -72,17 +82,24 @@ def add_transaction(transaction: TransactionJson):
 
 
 @router.delete("/transactions/", tags=["transactions"])
-def remove_transaction(id: int):
+def remove_transaction(session_key: str, id: int):
     """
     This endpoint removes the transaction with the given transaction id for the
-    current user (currently hardcoded to user.id = 2 as logins are not implemented)
+    current user.
     """
+    userId = check_logged_in(session_key)
+    if userId is None:
+        raise HTTPException(
+            status_code=401,
+            detail="You must be logged in to access this endpoint",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     with db.engine.connect() as conn:
         result = conn.execute(sqlalchemy.select(db.transactions.c.id).where(db.transactions.c.id == id))
         if result.rowcount == 0:
             raise HTTPException(status_code=404, detail="transaction not found")
     stmt = sqlalchemy.delete(db.transactions).where(db.transactions.c.id == id)
-    stmt = stmt.where(db.transactions.c.user_id == 2)  # hardcoded to 2 currently because no login
+    stmt = stmt.where(db.transactions.c.user_id == userId)
     with db.engine.begin() as conn:
         conn.execute(stmt)
     return {"message": "Transaction deleted successfully"}
@@ -99,6 +116,7 @@ class transaction_sort_options(str, Enum):
 
 @router.get("/transactions/", tags=["transactions"])
 def get_transactions(
+        session_key: str,
         id: int = None,
         category: int = None,
         place: str = None,
@@ -113,6 +131,13 @@ def get_transactions(
     This endpoint returns transactions of the current user that fit with
     the given arguments, sorted by the given sort type.
     """
+    userId = check_logged_in(session_key)
+    if userId is None:
+        raise HTTPException(
+            status_code=401,
+            detail="You must be logged in to access this endpoint",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     # First configure sort
     if sort is transaction_sort_options.dateNewToOld:
         order_by = sqlalchemy.desc(db.transactions.c.transaction_date)
@@ -146,7 +171,7 @@ def get_transactions(
             .join(db.tags, db.tags.c.id == db.transactions.c.tag_id, isouter=True)
             .group_by(db.transactions.c.id, db.categories.c.name, db.tags.c.name)
             .order_by(order_by)
-            .where(db.transactions.c.user_id == 2)  # hardcoded to 2 currently because no login
+            .where(db.transactions.c.user_id == userId)
     )
 
     # filter only if id parameter is passed
@@ -193,6 +218,7 @@ def get_transactions(
 
 @router.put("/transactions/{id}", tags=["transactions"])
 def update_transaction(
+        session_key: str,
         id: int = None,
         category: int = None,
         tag: int = None,
@@ -202,9 +228,8 @@ def update_transaction(
         note: str = None
 ):
     """
-    This endpoint updates a transaction of the given id of the current user
-    (currently hardcoded to user.id = 2 as logins are not implemented). If any
-    of the accepted values (besides id) is changed from its default, the
+    This endpoint updates a transaction of the given id of the current user.
+    If any of the accepted values (besides id) is changed from its default, the
     transaction will have that value updated.
     e.g. If you enter a valid id, and enter "Vons" for place, place will be
     updated to "Vons" in the transaction with the given id
@@ -213,9 +238,16 @@ def update_transaction(
 
     The endpoint ensures that a valid tag was chosen, if one was chosen
     """
+    userId = check_logged_in(session_key)
+    if userId is None:
+        raise HTTPException(
+            status_code=401,
+            detail="You must be logged in to access this endpoint",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     with db.engine.begin() as conn:
         stmt = sqlalchemy.select(db.transactions).where(db.transactions.c.id == id)
-        stmt = stmt.where(db.transactions.c.user_id == 2)  # hardcoded user_id
+        stmt = stmt.where(db.transactions.c.user_id == userId)
         result = conn.execute(stmt)
         if result.rowcount == 0:
             raise HTTPException(status_code=404, detail="transaction not found")
@@ -233,7 +265,7 @@ def update_transaction(
                 )
                 conn.execute(stmt)
         if tag is not None:
-            stmt = sqlalchemy.select(db.tags.c.id).where(db.tags.c.id == tag)
+            stmt = sqlalchemy.select(db.tags.c.id).where(db.tags.c.id == tag).where(db.tags.c.user_id == userId)
             result = conn.execute(stmt)
             if result.rowcount == 0:
                 raise HTTPException(status_code=400, detail="invalid tag (use get_tags or create_tag)")
@@ -277,17 +309,17 @@ def update_transaction(
 
 @router.put("/transactions/{id}/split", tags=["transactions"])
 def split_transaction(
+        session_key: str,
         id: int,
-        transaction1_amount: int,
+        transaction1_amount: float,
         transaction1_category: int,
-        transaction2_amount: int,
+        transaction2_amount: float,
         transaction2_category: int,
         transaction1_tag: int = None,
         transaction2_tag: int = None
 ):
     """
-    This endpoint splits a transaction of the given id of the current user
-    (currently hardcoded to user.id = 2 as logins are not implemented) into
+    This endpoint splits a transaction of the given id of the current user into
     2 separate transactions with the given amounts, categories, and tags.
 
     The endpoint ensures the two given amounts sum to the given transaction's
@@ -297,14 +329,21 @@ def split_transaction(
 
     The endpoint ensures that valid tags were chosen, if chosen
     """
+    userId = check_logged_in(session_key)
+    if userId is None:
+        raise HTTPException(
+            status_code=401,
+            detail="You must be logged in to access this endpoint",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     with db.engine.begin() as conn:
         stmt = sqlalchemy.select(db.transactions).where(db.transactions.c.id == id)
-        stmt = stmt.where(db.transactions.c.user_id == 2)  # hardcoded user_id
+        stmt = stmt.where(db.transactions.c.user_id == userId)
         result = conn.execute(stmt)
         if result.rowcount == 0:
             raise HTTPException(status_code=404, detail="transaction not found")
         db_transaction = result.fetchone()
-        if db_transaction.amount != (transaction1_amount + transaction2_amount):
+        if round(db_transaction.amount*100) != (round(transaction1_amount*100) + round(transaction2_amount*100)):
             raise HTTPException(status_code=400, detail="Given amounts do not sum to given transaction's total")
         # verify trans1 category
         stmt = sqlalchemy.select(db.categories.c.id).where(db.categories.c.id == transaction1_category)
@@ -324,7 +363,7 @@ def split_transaction(
             categoryID2 = row[0]
         # verify trans1 tag
         if transaction1_tag is not None:
-            stmt = sqlalchemy.select(db.tags.c.id).where(db.tags.c.id == transaction1_tag)
+            stmt = sqlalchemy.select(db.tags.c.id).where(db.tags.c.id == transaction1_tag).where(db.tags.c.user_id == userId)
             result = conn.execute(stmt)
             if result.rowcount == 0:
                 raise HTTPException(status_code=400, detail="invalid transaction1_tag (use get_tags or create_tag)")
@@ -332,10 +371,10 @@ def split_transaction(
                 row = result.fetchone()
                 tagID1 = row[0]
         else:
-            tagID1 = 0
+            tagID1 = None
         # verify trans2 tag
         if transaction2_tag is not None:
-            stmt = sqlalchemy.select(db.tags.c.id).where(db.tags.c.id == transaction2_tag)
+            stmt = sqlalchemy.select(db.tags.c.id).where(db.tags.c.id == transaction2_tag).where(db.tags.c.user_id == userId)
             result = conn.execute(stmt)
             if result.rowcount == 0:
                 raise HTTPException(status_code=400, detail="invalid transaction2_tag (use get_tags or create_tag)")
@@ -343,9 +382,9 @@ def split_transaction(
                 row = result.fetchone()
                 tagID2 = row[0]
         else:
-            tagID2 = 0
+            tagID2 = None
         # Time to add two new transactions
-        newTrans1 = add_transaction(TransactionJson(
+        newTrans1 = add_transaction(session_key, TransactionJson(
             category=categoryID1,
             date=db_transaction.transaction_date,
             place=db_transaction.place,
@@ -353,7 +392,7 @@ def split_transaction(
             tag=tagID1,
             note=db_transaction.note
         ))
-        newTrans2 = add_transaction(TransactionJson(
+        newTrans2 = add_transaction(session_key, TransactionJson(
             category=categoryID2,
             date=db_transaction.transaction_date,
             place=db_transaction.place,
@@ -362,5 +401,5 @@ def split_transaction(
             note=db_transaction.note
         ))
         # remove original transaction
-        remove_transaction(id=id)
+        remove_transaction(session_key, id=id)
     return newTrans1, newTrans2
