@@ -3,8 +3,7 @@ from fastapi import APIRouter, HTTPException
 from enum import Enum
 
 from sqlalchemy.sql.operators import as_
-from src import database as db
-from src import user_session
+from src import access_ctrl, database as db
 from fastapi.params import Query
 from pydantic import BaseModel
 from typing import Dict
@@ -42,8 +41,8 @@ def get_categories():
 def datetime_today():
     return datetime.today()
 
-@router.get("/{user_id}/current_budget/", tags=["budget"])
-def get_my_current_budget(user_id: int):
+@router.get("/current_budget/", tags=["budget"])
+def get_my_current_budget(session_key: str):
     """
     This endpoint returns your configured budgeting categories. For each category it returns:
     * `category_name`: The name of the category.
@@ -53,9 +52,10 @@ def get_my_current_budget(user_id: int):
     * `end_date`: The end date of the curent period for this category.
     * `period`: The period defined for this budget (Weekly, Quarterly, etc.)
     """
-    #  TODO: login
-    # if not user_session.check_logged_in(user_id):
-    #     raise HTTPException(403, "Not logged in")
+
+    user_id = access_ctrl.check_logged_in(session_key)
+    if user_id is None:
+        raise HTTPException(401, "Not logged in")
 
     with open("src/api/queries/my_current_budget.sql") as file:
         sql = sqlalchemy.text(file.read())
@@ -87,10 +87,10 @@ class BudgetDefJson(BaseModel):
 
 
 class AllBudgetsDefJson(BaseModel):
-    categories: Dict[int, BudgetDefJson]
+    categories: Dict[int, BudgetDefJson] # TODO: Name for int
 
-@router.post("/{user_id}/budgets/", tags=["budget"])
-def post_define_budgets(user_id: int, budgetdef: AllBudgetsDefJson):
+@router.post("/budgets/", tags=["budget"])
+def post_define_budgets(session_key: str, budgetdef: AllBudgetsDefJson):
     """
     This endpoint adds budget instances for each specified category.
     The data should be in the ormat of a dictionary with category ids as keys
@@ -100,22 +100,27 @@ def post_define_budgets(user_id: int, budgetdef: AllBudgetsDefJson):
     * `amount`: How much money.
     * `period_id`: The period id defined for this budget (1: Weekly, 4: Quarterly, etc.)
     """
-    # TODO: login
-    # if not user_session.check_logged_in(user_id):
-    #     raise HTTPException(403, "Not logged in")
+
+    user_id = access_ctrl.check_logged_in(session_key)
+    if user_id is None:
+        raise HTTPException(401, "Not logged in")
 
     # TODO: perhaps remove this, substitute for better error handling in the execution
     # Validate category selections
-    categories = list(get_categories())
-    for cat_id in budgetdef.categories.keys():
-        if cat_id not in (cat["id"] for cat in categories):
-            raise HTTPException(status_code=400, detail=f"invalid category {cat_id} (use get_categories)")
+    try:
+        categories = list(get_categories())
+        for cat_id in budgetdef.categories.keys():
+            cat_id = int(cat_id)
+            if cat_id not in (cat["id"] for cat in categories):
+                raise
+    except:
+        raise HTTPException(status_code=400, detail=f"invalid category (use get_categories)")
 
     rows_list = [
         {
             "user_id" : user_id,
             "budget_amount" : spec.amount,
-            "category_id" : cat,
+            "category_id" : int(cat),
             "start_date" : spec.start_date,
             "end_date" : spec.end_date,
             "period_type_id" : spec.period_id
@@ -126,7 +131,7 @@ def post_define_budgets(user_id: int, budgetdef: AllBudgetsDefJson):
         stmt = (
             sqlalchemy.insert(db.budgets)
             .values(rows_list)
-            .returning(db.budgets.c.id)
+            .returning(db.budgets.c.category_id, db.budgets.c.id)
         )
     except Exception as e:
         raise HTTPException(400, detail=e)
@@ -142,8 +147,8 @@ def post_define_budgets(user_id: int, budgetdef: AllBudgetsDefJson):
         )
         return json
 
-@router.get("/{user_id}/budgets/", tags=["budget"])
-def get_budgets(user_id: int, category: str = None):
+@router.get("/budgets/", tags=["budget"])
+def get_budgets(session_key: str, category: str = None):
     """
     This endpoint returns a list of all budgets for the current user
     Optionally filtered by category
@@ -154,9 +159,10 @@ def get_budgets(user_id: int, category: str = None):
     * `amount`: How much money.
     * `period`: The period defined for this budget (Weekly, Quarterly, etc.)
     """
-    # TODO: login
-    # if not user_session.check_logged_in(user_id):
-    #     raise HTTPException(403, "Not logged in")
+
+    user_id = access_ctrl.check_logged_in(session_key)
+    if user_id is None:
+        raise HTTPException(401, "Not logged in")
 
     # TODO: pagination
 

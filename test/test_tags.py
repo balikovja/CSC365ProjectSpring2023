@@ -4,7 +4,7 @@ import sqlalchemy
 from fastapi.testclient import TestClient
 from src.api.server import app
 import json
-from src import user_session
+from src import access_ctrl
 from test.test_data import data_loader
 from test.testfixture import db_test_fixture
 from pytest_mock import mocker

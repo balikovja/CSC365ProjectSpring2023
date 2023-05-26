@@ -7,4 +7,6 @@ python-dotenv
 pre-commit
 pydantic
 pytz
-pytest_mock
+bcrypt
+cryptography>=3.4.7
+pytest-mock
