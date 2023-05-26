@@ -9,5 +9,4 @@ pydantic
 pytz
 bcrypt
 cryptography>=3.4.7
-secrets
 pytest-mock
