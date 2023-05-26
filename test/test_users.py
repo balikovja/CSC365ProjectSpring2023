@@ -116,10 +116,11 @@ def test_logout_timer(db_test_fixture, mocker):
 	assert response.status_code == 200
 	key = json.loads(response.content)["token"]
 	
+	assert access_ctrl.check_logged_in(key)
 	mocker.patch(
 		'src.access_ctrl._dt_now',
 		lambda : datetime.now() + timedelta(0, 0, 0, 0, 16)
 	)
 	# 16 minutes pass...
-	
+
 	assert not access_ctrl.check_logged_in(key)
