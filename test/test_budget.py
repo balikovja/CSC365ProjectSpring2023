@@ -2,7 +2,7 @@ import datetime
 from fastapi.testclient import TestClient
 from src.api.server import app
 import json
-from src import user_session
+from src import access_ctrl
 
 from test.testfixture import db_test_fixture
 from pytest_mock import mocker
@@ -106,7 +106,8 @@ def test_get_my_current_budget(db_test_fixture, mocker):
         'src.api.budget.datetime_today',
         lambda : datetime.date(2023,1,5)
     )
-    response = client.get("/1/current_budget/")
+    key = access_ctrl.login(1)
+    response = client.get(f"/current_budget/?session_key={key}")
     assert response.status_code == 200
     j = response.json()
     for x in j:
@@ -180,7 +181,8 @@ def test_get_my_current_budget2(db_test_fixture, mocker):
         'src.api.budget.datetime_today',
         lambda : datetime.date(2023,1,9)
     )
-    response = client.get("/1/current_budget/")
+    key = access_ctrl.login(1)
+    response = client.get(f"/current_budget/?session_key={key}")
     assert response.status_code == 200
     j = response.json()
     for x in j:
@@ -243,7 +245,8 @@ def test_get_budget(db_test_fixture):
     expect.sort(key=lambda x: (x["start_date"], x["amount"]))
     data_loader.load_transactions(engine)
     data_loader.load_budgets(engine)
-    response = client.get("/1/budgets/")
+    key = access_ctrl.login(1)
+    response = client.get(f"/budgets/?session_key={key}")
     assert response.status_code == 200
     j = response.json()
     for x in j:
