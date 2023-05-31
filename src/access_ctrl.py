@@ -3,7 +3,7 @@ import datetime
 import secrets
 
 sessions = {}
-
+# TODO: limit # of keys
 
 # 15 minutes time out
 LOGIN_TIME_OUT = datetime.timedelta(minutes=15)

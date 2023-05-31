@@ -99,7 +99,9 @@ def post_define_budgets(session_key: str, budgetdef: AllBudgetsDefJson):
     * `start_date`: The start of this budget period.
     * `end_date`: The end of this budget period.
     * `amount`: How much money.
-    * `period_id`: The period id defined for this budget (1: Weekly, 4: Quarterly, etc.)
+    * `period_id`: The period id defined for this budget:
+        1: Weekly, 2: Biweekly, 3: Monthly
+        4: Quarterly, 5: Annual
     """
 
     user_id = access_ctrl.check_logged_in(session_key)
@@ -123,6 +125,7 @@ def post_define_budgets(session_key: str, budgetdef: AllBudgetsDefJson):
             "end_date" : spec.end_date,
             "period_type_id" : spec.period_id
         }
+        # TODO: fix
         for cat, spec in budgetdef.categories.items()
     ]
     try:
@@ -194,4 +197,42 @@ def get_budgets(session_key: str, category: str = None):
             for row in result
         )
         return json
+
+@router.post("/budgets/copy_budgets/", tags=["budget"])
+def post_copy_budgets(session_key: str, clone_all: bool = False):
+    """
+    This endpoint copies the user's most recent budget for each category
+    based on their specified periods. The new start dates are set as the
+    day after the previous budget ends.
+    * `session_key`: the session token for the user
+    * `clone_all`: whether to include budgets that will be inactive on today's date
+    Returns:
+    * `ids`: a list of ids of the new budget entries
+    * `message`: status message with number of new budgets
+    """
+    user_id = access_ctrl.check_logged_in(session_key)
+    if user_id is None:
+        raise HTTPException(401, "Not logged in")
+
+    with open("src/api/queries/copy_budgets.sql") as file:
+        sql = sqlalchemy.text(file.read())
+
+    current_date = datetime_today().strftime("%Y-%m-%d")
+    
+    try:
+        with db.engine.begin() as conn:
+            result = conn.execute(sql,
+                {"quser_id" : user_id,
+                "qcurrent_date" : current_date,
+                "qcopy_override" : clone_all}
+            )
+            json = {
+                "ids" : (r.id for r in result),
+                "message" : f"Created {result.rowcount} new budgets"
+            }
+            return json
+    except Exception as e:
+        raise HTTPException(422, str(e))
+
+
 
