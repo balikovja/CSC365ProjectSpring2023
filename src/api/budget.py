@@ -6,7 +6,7 @@ from sqlalchemy.sql.operators import as_
 from src import access_ctrl, database as db
 from fastapi.params import Query
 from pydantic import BaseModel
-from typing import Dict
+from typing import Dict, List
 from datetime import datetime
 
 router = APIRouter()
@@ -80,6 +80,7 @@ def get_my_current_budget(session_key: str):
 
 # TODO: Fix types
 class BudgetDefJson(BaseModel):
+    category_id: int
     start_date: str
     end_date: str
     amount: str
@@ -87,14 +88,14 @@ class BudgetDefJson(BaseModel):
 
 
 class AllBudgetsDefJson(BaseModel):
-    categories: Dict[int, BudgetDefJson] # TODO: Name for int
-
+    categories: List[BudgetDefJson] #fastapi/issues/5470
+# 
 @router.post("/budgets/", tags=["budget"])
 def post_define_budgets(session_key: str, budgetdef: AllBudgetsDefJson):
     """
     This endpoint adds budget instances for each specified category.
-    The data should be in the ormat of a dictionary with category ids as keys
-    and values of the following dictionaries: 
+    The data should be a list where each category specification has the following atributes: 
+    * `category_id`: the category
     * `start_date`: The start of this budget period.
     * `end_date`: The end of this budget period.
     * `amount`: How much money.
@@ -107,14 +108,11 @@ def post_define_budgets(session_key: str, budgetdef: AllBudgetsDefJson):
 
     # TODO: perhaps remove this, substitute for better error handling in the execution
     # Validate category selections
-    try:
-        categories = list(get_categories())
-        for cat_id in budgetdef.categories.keys():
-            cat_id = int(cat_id)
-            if cat_id not in (cat["id"] for cat in categories):
-                raise
-    except:
-        raise HTTPException(status_code=400, detail=f"invalid category (use get_categories)")
+    categories = list(get_categories())
+    for c in budgetdef.categories:
+        cat_id = c.category_id
+        if cat_id not in (cat["id"] for cat in categories):
+            raise HTTPException(status_code=400, detail=f"invalid category (use get_categories)")
 
     rows_list = [
         {
