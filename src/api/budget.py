@@ -119,14 +119,13 @@ def post_define_budgets(session_key: str, budgetdef: AllBudgetsDefJson):
     rows_list = [
         {
             "user_id" : user_id,
-            "budget_amount" : spec.amount,
-            "category_id" : int(cat),
-            "start_date" : spec.start_date,
-            "end_date" : spec.end_date,
-            "period_type_id" : spec.period_id
+            "budget_amount" : cat.amount,
+            "category_id" : cat.category_id,
+            "start_date" : cat.start_date,
+            "end_date" : cat.end_date,
+            "period_type_id" : cat.period_id
         }
-        # TODO: fix
-        for cat, spec in budgetdef.categories.items()
+        for cat in budgetdef.categories
     ]
     try:
         stmt = (
