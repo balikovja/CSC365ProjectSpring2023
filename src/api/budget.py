@@ -198,13 +198,14 @@ def get_budgets(session_key: str, category: str = None):
         return json
 
 @router.post("/budgets/copy_budgets/", tags=["budget"])
-def post_copy_budgets(session_key: str, clone_all: bool = False):
+def post_copy_budgets(session_key: str, clone_all: bool = False, multiplier: float = 1.0):
     """
     This endpoint copies the user's most recent budget for each category
     based on their specified periods. The new start dates are set as the
     day after the previous budget ends.
     * `session_key`: the session token for the user
     * `clone_all`: whether to include budgets that will be inactive on today's date
+    * `multiplier`: multiply the amounts by this number for the new budgets (e.g. to account for inflation)
     Returns:
     * `ids`: a list of ids of the new budget entries
     * `message`: status message with number of new budgets
@@ -223,6 +224,7 @@ def post_copy_budgets(session_key: str, clone_all: bool = False):
             result = conn.execute(sql,
                 {"quser_id" : user_id,
                 "qcurrent_date" : current_date,
+                "qmultiplier": multiplier,
                 "qcopy_override" : clone_all}
             )
             json = {

@@ -1,7 +1,7 @@
 insert into budgets (user_id, budget_amount, category_id, start_date, end_date, period_type_id)
 
 select * from (
-	select user_id, budget_amount, category_id,
+	select user_id, (:qmultiplier) * budget_amount as budget_amount, category_id,
 	date(new_start_date) as new_start_date,
 	date(new_start_date + p.period - interval '1 day') as new_end_date,
 	period_type_id
