@@ -30,6 +30,9 @@ target_metadata = None
 # ... etc.
 
 def database_connection_url():
+    url = input("Enter connection url (default is dotenv): ")
+    if url:
+        return url
     dotenv.load_dotenv()
     DB_USER: str = os.environ.get("POSTGRES_ADMIN_USER")
     DB_PASSWD = os.environ.get("POSTGRES_ADMIN_PASSWORD")
