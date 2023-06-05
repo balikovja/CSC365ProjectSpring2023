@@ -92,19 +92,20 @@ def add_user(user: UserJson):
     except:
         raise HTTPException(400)
     
+    values = {
+        "username" : user.username,
+        "password_hash" : pw_hash.decode(),
+        "password_salt" : pw_salt.decode()
+    }
+    stmt = db.users.insert().values(values).returning(db.users.c.id)
     try:
         with db.engine.begin() as conn:
-            values = {
-                "username" : user.username,
-                "password_hash" : pw_hash.decode(),
-                "password_salt" : pw_salt.decode()
-            }
-            stmt = db.users.insert().values(values).returning(db.users.c.id)
             result = conn.execute(stmt)
-            inserted_id = result.one().id
     except Exception as e:
         raise HTTPException(422, "Username invalid or has already been taken")
 
+    inserted_id = result.one().id
+    
     return inserted_id
 
 # TODO: implement. Requires foreign key cascade delete setup...
