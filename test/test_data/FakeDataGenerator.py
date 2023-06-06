@@ -4,9 +4,9 @@ import sqlalchemy
 from faker import Faker
 import random
 import decimal
-from datetime import datetime
+from datetime import datetime, timedelta
 from pydantic import BaseModel
-
+import bcrypt
 import src.api.users
 import src.database as db
 
@@ -32,20 +32,54 @@ class FakeDataGenerator:
             conn.execute(sqlalchemy.text("DELETE FROM tags;"))
             conn.execute(sqlalchemy.text("DELETE FROM users;"))
 
+    # def generate_user_data(self, num_rows):
+    #     self.userData = []
+    #     data = []
+    #     for _ in range(num_rows):
+    #         user = UserJson(username=self.fake.email(), password=self.fake.password())
+    #         data.append(user)
+    #         self.userData.append(user)
+    #     return data
+
+    # def insert_user_data(self, num_rows):
+    #     self.users = []
+    #     data = self.generate_user_data(num_rows)
+    #     print(f"User data generated ({num_rows} rows)")
+    #     for userEntry in data:
+    #         self.users.append(src.api.users.add_user(userEntry))
+
     def generate_user_data(self, num_rows):
         self.userData = []
         data = []
+        passwords = []
+
+        for _ in range(10):
+            pw = self.fake.password()
+            pwsalt = bcrypt.gensalt()
+            pwhash = bcrypt.hashpw(pw.encode(), pwsalt)
+            passwords.append({
+                "pw" : pw,
+                "salt" : pwsalt.decode(),
+                "hash" : pwhash.decode()
+            })
+        
+        data = []
         for _ in range(num_rows):
-            user = UserJson(username=self.fake.email(), password=self.fake.password())
-            data.append(user)
-            self.userData.append(user)
+            pw = random.choice(passwords)
+            data.append({
+                "username" : self.fake.unique.user_name(),
+                "password_hash" : pw["hash"],
+                "password_salt" : pw["salt"]
+            })
+        self.userData = data
         return data
 
     def insert_user_data(self, num_rows):
-        self.users = []
         data = self.generate_user_data(num_rows)
-        for userEntry in data:
-            self.users.append(src.api.users.add_user(userEntry))
+        print(f"User data generated ({num_rows} rows)")
+        with db.engine.begin() as conn:
+            result = conn.execute(sqlalchemy.insert(db.users).values(data).returning(db.users.c.id))
+            self.users = [row.id for row in result]
 
     def generate_tag_data(self, num_rows):
         data = []
@@ -59,27 +93,31 @@ class FakeDataGenerator:
 
     def insert_tag_data(self, num_rows):
         data = self.generate_tag_data(num_rows)
+        print(f"Tag data generated ({num_rows} rows)")
         with db.engine.begin() as conn:
             conn.execute(sqlalchemy.insert(db.tags).values(data))
 
     def generate_transaction_data(self, num_rows):
         data = []
-        for x in range(len(self.users)):
+        today = datetime.today()
+        min_date = today - timedelta(365)
+        companies = [self.fake.company() for _ in range(100)]
+        for user in self.users:
             with db.engine.begin() as conn:
-                result = conn.execute(sqlalchemy.select(db.tags).where(db.tags.c.user_id == self.users[x]))
+                result = conn.execute(sqlalchemy.select(db.tags).where(db.tags.c.user_id == user))
                 tags = [row.id for row in result]
                 if len(tags) == 0:
                     tags = [None]
             for y in range(int(num_rows/len(self.users))):
-                transaction_date = self.fake.date_between(start_date='-1y', end_date='today')
-                created_at = self.fake.date_time_between_dates(datetime_start=transaction_date, datetime_end='now')
+                transaction_date = self.fake.date_between(start_date=min_date, end_date=today)
+                # created_at = self.fake.date_time_between_dates(datetime_start=transaction_date, datetime_end='now')
 
                 row = {
-                    'created_at': created_at,
-                    'user_id': self.users[x],
+                    # 'created_at': created_at,
+                    'user_id': user,
                     'category_id': random.choice(self.categories),
                     'transaction_date': transaction_date,
-                    'place': self.fake.company(),
+                    'place': random.choice(companies),
                     'amount': decimal.Decimal(random.randrange(1000, 100000)) / 100,  # Example amount range
                     'tag_id': random.choice(tags),
                     'note': self.fake.sentence(),
@@ -89,5 +127,6 @@ class FakeDataGenerator:
 
     def insert_transaction_data(self, num_rows):
         data = self.generate_transaction_data(num_rows)
+        print(f"Transaction data generated ({num_rows} rows)")
         with db.engine.begin() as conn:
             conn.execute(sqlalchemy.insert(db.transactions).values(data))
