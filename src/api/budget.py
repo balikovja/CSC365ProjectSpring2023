@@ -148,10 +148,10 @@ def post_define_budgets(session_key: str, budgetdef: AllBudgetsDefJson):
         return json
 
 @router.get("/budgets/", tags=["budget"])
-def get_budgets(session_key: str, category: str = None):
+def get_budgets(session_key: str, category: int = None):
     """
     This endpoint returns a list of all budgets for the current user
-    Optionally filtered by category
+    Optionally filtered by category id
     * `budget_id`: Internal budget id
     * `category`: The category associated with this budget
     * `start_date`: The start of this budget period.
@@ -180,7 +180,7 @@ def get_budgets(session_key: str, category: str = None):
     .order_by(db.budgets.c.start_date, db.budgets.c.budget_amount)
     )
     if category:
-        stmt = stmt.where(db.categories.c.name.lower() == category.lower())
+        stmt = stmt.where(db.budgets.c.category_id == category)
     
     with db.engine.begin() as conn:
         result = conn.execute(stmt)
