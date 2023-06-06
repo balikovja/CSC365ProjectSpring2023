@@ -36,7 +36,7 @@ class FakeDataGenerator:
         self.userData = []
         data = []
         for _ in range(num_rows):
-            user = UserJson(username=self.fake.email(), password=self.fake.password())
+            user = UserJson(username=self.fake.unique.email(), password=self.fake.password())
             data.append(user)
             self.userData.append(user)
         return data

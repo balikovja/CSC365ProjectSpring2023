@@ -27,9 +27,9 @@ class TransactionJson(BaseModel):
 def test_Faker_transactions():
     generator = FakeDataGenerator()
     generator.clear_tables()
-    generator.insert_user_data(10)
-    generator.insert_tag_data(40)
-    generator.insert_transaction_data(1000)
+    generator.insert_user_data(10000)
+    generator.insert_tag_data(50000)
+    generator.insert_transaction_data(1000000)
     assert True
 
 
