@@ -5,6 +5,7 @@ from faker import Faker
 import random
 import decimal
 from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 from pydantic import BaseModel
 import bcrypt
 import src.api.users
@@ -15,6 +16,9 @@ class UserJson(BaseModel):
     username: str
     password: str
 
+def partition(x, max_block):
+    for i in range(0, len(x), max_block):
+        yield x[i:i+max_block]
 
 # Example usage
 # generator = FakeDataGenerator()
@@ -29,6 +33,7 @@ class FakeDataGenerator:
     def clear_tables(self):
         with db.engine.begin() as conn:
             conn.execute(sqlalchemy.text("DELETE FROM transactions;"))
+            conn.execute(sqlalchemy.text("DELETE FROM budgets;"))
             conn.execute(sqlalchemy.text("DELETE FROM tags;"))
             conn.execute(sqlalchemy.text("DELETE FROM users;"))
 
@@ -109,7 +114,7 @@ class FakeDataGenerator:
                 if len(tags) == 0:
                     tags = [None]
             for y in range(int(num_rows/len(self.users))):
-                transaction_date = self.fake.date_between(start_date=min_date, end_date=today)
+                transaction_date = self.fake.date_between_dates(min_date, today)
                 # created_at = self.fake.date_time_between_dates(datetime_start=transaction_date, datetime_end='now')
 
                 row = {
@@ -129,4 +134,46 @@ class FakeDataGenerator:
         data = self.generate_transaction_data(num_rows)
         print(f"Transaction data generated ({num_rows} rows)")
         with db.engine.begin() as conn:
-            conn.execute(sqlalchemy.insert(db.transactions).values(data))
+            for data_part in partition(data, 50000):
+                conn.execute(sqlalchemy.insert(db.transactions).values(data_part))
+                print(".", end="", flush=True)
+        print("")
+
+    
+    def generate_budget_data(self, num_rows):
+        periods = {
+            1: relativedelta(weeks=1),
+            2: relativedelta(weeks=2),
+            3: relativedelta(months=1),
+            4: relativedelta(months=3),
+            5: relativedelta(years=1)
+        }
+        data = []
+        for user in self.users:
+            for category in self.categories:
+                # work backwards
+                end_date = self.fake.date_between('-30d', '+30d')                
+                for _ in range(int(num_rows/len(self.users)/len(self.categories))):
+                    p_id = random.choice(list(periods.keys()))
+                    start_date = end_date - periods[p_id]
+                    row = {
+                        'user_id' : user,
+                        'budget_amount' : decimal.Decimal(random.randrange(10000, 100000)) / 100 * p_id,
+                        'category_id' : category,
+                        'start_date' : start_date + relativedelta(days=1),
+                        'end_date' : end_date,
+                        'period_type_id' : p_id
+                    }
+                    data.append(row)
+                    end_date = start_date
+        return data
+
+    def insert_budget_data(self, num_rows):
+        data = self.generate_budget_data(num_rows)
+        print(f"Budget data generated ({num_rows} rows)")
+        with db.engine.begin() as conn:
+            for data_part in partition(data, 50000):
+                conn.execute(sqlalchemy.insert(db.budgets).values(data_part))
+                print(".", end="", flush=True)
+        print("")
+
