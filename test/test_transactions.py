@@ -8,6 +8,7 @@ from src.api.server import app
 import json
 from src import access_ctrl
 from test.test_data import data_loader
+from test.test_data.FakeDataGenerator import FakeDataGenerator
 from test.testfixture import db_test_fixture
 from pytest_mock import mocker
 
@@ -21,6 +22,15 @@ class TransactionJson(BaseModel):
     amount: float
     tag: int
     note: str
+
+
+def test_Faker_transactions():
+    generator = FakeDataGenerator()
+    generator.clear_tables()
+    generator.insert_user_data(10)
+    generator.insert_tag_data(40)
+    generator.insert_transaction_data(1000)
+    assert True
 
 
 def test_get_trans1(db_test_fixture):

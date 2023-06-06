@@ -73,7 +73,7 @@ def create_tag(session_key: str, name: str):
     return inserted_id
 
 
-#@router.delete("/tags/", tags=["tags"])
+@router.delete("/tags/", tags=["tags"])
 def remove_tag(session_key: str, id: int):
     """
     This endpoint removes the tag with the given tag id for the current user.
@@ -89,6 +89,10 @@ def remove_tag(session_key: str, id: int):
         result = conn.execute(sqlalchemy.select(db.tags.c.id).where(db.tags.c.id == id))
         if result.rowcount == 0:
             raise HTTPException(status_code=404, detail="tag not found")
+    stmt = sqlalchemy.update(db.transactions).values(tag_id=None).where(db.transactions.c.tag_id == id)
+    stmt.where(db.tags.c.user_id == userId)
+    with db.engine.begin() as conn:
+        conn.execute(stmt)
     stmt = sqlalchemy.delete(db.tags).where(db.tags.c.id == id)
     stmt = stmt.where(db.tags.c.user_id == userId)
     with db.engine.begin() as conn:
