@@ -11,3 +11,4 @@ TechnicalSpecifications.md
 supabase
 **/__pycache__
 alembic
+faker_run.py
