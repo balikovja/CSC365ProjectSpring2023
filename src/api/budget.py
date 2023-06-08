@@ -102,6 +102,7 @@ def post_define_budgets(session_key: str, budgetdef: AllBudgetsDefJson):
     * `period_id`: The period id defined for this budget:
         1: Weekly, 2: Biweekly, 3: Monthly
         4: Quarterly, 5: Annual
+    It returns a list of category ids and the newly created budget ids
     """
 
     user_id = access_ctrl.check_logged_in(session_key)
@@ -140,7 +141,7 @@ def post_define_budgets(session_key: str, budgetdef: AllBudgetsDefJson):
         result = conn.execute(stmt)
         json = (
             {
-                "category_name" : row.category_id,
+                "category_id" : row.category_id,
                 "budget_id" : row.id
             }
             for row in result
