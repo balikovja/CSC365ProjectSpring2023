@@ -25,6 +25,14 @@ tags_metadata = [
         "name": "tags",
         "description": "Access/Edit/Create information on tags in our database",
     },
+    {
+        "name": "budget",
+        "description": "Define and view budgets and view categories",
+    },
+    {
+        "name": "access control",
+        "description": "Create users and log in",
+    },
 ]
 
 app = FastAPI(
