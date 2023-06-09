@@ -1,0 +1,113 @@
+
+1. Creating a user
+
+curl -X 'POST' \
+  'https://ibudgetlyify365.vercel.app/accounts/' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "username": "jeffarmstrong",
+  "password": "1234"
+}'
+
+{
+  "username": "jeffarmstrong2",
+  "password": "1234"
+}
+
+DONE ---> uer id = 18
+
+**********************************
+
+2. Logging in
+
+curl -X 'POST' \
+  'https://ibudgetlyify365.vercel.app/login/' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "username": "jeffarmstrong",
+  "password": "1234"
+}'
+
+
+{
+  "username": "jeffarmstrong",
+  "password": "1234"
+}
+
+********************************
+
+3. Transactions & tags
+
+* (done) Load fake data
+* Demonstrate add and read
+
+{
+  "category": 3,
+  "date": "2023-06-09",
+  "place": "McDonalds",
+  "amount": 85.23,
+  "tag": null,
+  "note": "Had a delicious big mac and french fries"
+}
+
+* Get Transactions
+
+* Create tag
+
+* Edit transaction to include the tag
+
+* Split transaction
+
+**********************************
+
+4. Define budgets
+rent = 1300/month starts on 1st
+groceries = 90/week starts on monday
+restaurants = 130/2weeks starts on sunday
+entertainment = 550/qtr starts on 1st (q2)
+
+{
+  "categories": [
+    {
+      "category_id": 1,
+      "start_date": "2023-05-01",
+      "end_date": "2023-05-31",
+      "amount": "1300.00",
+      "period_id": 3
+    },
+    {
+      "category_id": 2,
+      "start_date": "2023-05-29",
+      "end_date": "2023-06-04",
+      "amount": "90.00",
+      "period_id": 1
+    },
+    {
+      "category_id": 3,
+      "start_date": "2023-05-21",
+      "end_date": "2023-06-03",
+      "amount": "130.00",
+      "period_id": 2
+    },
+	{
+      "category_id": 4,
+      "start_date": "2023-04-01",
+      "end_date": "2023-06-30",
+      "amount": "550.00",
+      "period_id": 4
+    }
+  ]
+}
+
+* Run my current budget
+
+
+
+********************************
+
+5. Copy budgets
+
+* Copy budgets
+* Re-run my current budget
