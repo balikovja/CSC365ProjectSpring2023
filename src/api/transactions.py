@@ -272,7 +272,7 @@ def update_transaction(
             else:
                 stmt = (
                     sqlalchemy.update(db.transactions)
-                        .values(tag_id=category)
+                        .values(tag_id=tag)
                         .where(db.transactions.c.id == id)
                 )
                 conn.execute(stmt)
