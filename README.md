@@ -3,6 +3,10 @@
 </h1>
 
 <div align="center">
+  DEPRECATED: This project was hosted for free on Vercel but is no longer in use. This Github remains available to showcase the code.
+</div>
+
+<div align="center">
   <a href="https://github.com/balikovja/iBudgetlyify365/issues/new?assignees=&labels=bug&template=01_BUG_REPORT.md&title=bug%3A+">Report a Bug</a>
   ·
   <a href="https://github.com/balikovja/iBudgetlyify365/issues/new?assignees=&labels=enhancement&template=02_FEATURE_REQUEST.md&title=feat%3A+">Request a Feature</a>
